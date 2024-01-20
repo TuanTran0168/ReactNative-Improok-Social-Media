@@ -19,7 +19,6 @@ import GroupMember from './src/layouts/GroupMember';
 import GroupEdit from './src/layouts/GroupEdit';
 import InvitationPost from './src/layouts/InvitationPost';
 import SurveyPost from './src/layouts/SurveyPost';
-import { AutocompleteDropdownContextProvider } from 'react-native-autocomplete-dropdown';
 import SurveyForm from './src/layouts/SurveyForm';
 import FormTest from './src/layouts/FormTest';
 import Survey from './src/layouts/Survey';
@@ -27,6 +26,9 @@ import Invitation from './src/layouts/Invitation';
 import SurveyDetail from './src/layouts/SurveyDetail';
 import { NativeBaseProvider } from 'native-base';
 import Toast from 'react-native-toast-message';
+import PostManagement from './src/layouts/PostManagement';
+import SurveyStats from './src/layouts/SurveyStats';
+import { Root as PopupRootProvider } from 'react-native-popup-confirm-toast';
 // import { NativeBaseConfigProvider } from 'native-base/lib/typescript/core/NativeBaseContext';
 
 export const MyUserContext = createContext();
@@ -38,11 +40,11 @@ export default function App() {
   return (
     <MyUserContext.Provider value={[user, dispatch]}>
       <NativeBaseProvider>
-        <AutocompleteDropdownContextProvider>
+        <PopupRootProvider>
           <NativeRouter>
             <NavigationContainer>
               <Stack.Navigator>
-                <Stack.Screen name="Đăng nhập" component={Login} />
+                <Stack.Screen name="Đăng nhập" component={Login} options={{ headerShown: false }} />
                 <Stack.Screen name="Đăng ký" component={Register} />
                 <Stack.Screen name="Trang chủ" component={MainScreen} options={{ headerShown: false }} />
                 <Stack.Screen
@@ -66,7 +68,7 @@ export default function App() {
                           backgroundColor="#fff"
                           color="black" />
                       </View>
-                    ),
+                    )
                   }}
                 />
                 <Stack.Screen name="Post" component={Post} />
@@ -83,11 +85,13 @@ export default function App() {
                 <Stack.Screen name="Khảo sát" component={Survey} />
                 <Stack.Screen name="Sự kiện" component={Invitation} />
                 <Stack.Screen name="Chi tiết khảo sát" component={SurveyDetail} />
+                <Stack.Screen name="Quản lý bài đăng" component={PostManagement} />
+                <Stack.Screen name="Thống kê khảo sát" component={SurveyStats} />
               </Stack.Navigator>
               <Toast />
             </NavigationContainer>
           </NativeRouter>
-        </AutocompleteDropdownContextProvider>
+        </PopupRootProvider>
       </NativeBaseProvider>
     </MyUserContext.Provider>
   );

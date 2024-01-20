@@ -52,7 +52,7 @@ const PersonalScreen = ({ navigation }) => {
     return (
         <>
             <ScrollView>
-                <View style={styles.personalContainer}>
+                {/* <View style={styles.personalContainer}>
                     <Text style={{ fontSize: 25, fontWeight: 'bold' }}>Menu</Text>
                     <View style={styles.headerIcons}>
                         <View style={styles.iconBg}>
@@ -70,12 +70,15 @@ const PersonalScreen = ({ navigation }) => {
                             />
                         </View>
                     </View>
-                </View>
+                </View> */}
+                <View style={{ height: 10, backgroundColor: 'transparent' }}></View>
                 <View>
                     <TouchableOpacity onPress={() => navigation.navigate('Trang cá nhân')} style={styles.profileContainer}>
-                        <Image source={{ uri: userInfo?.avatar }} style={styles.profileStyle} />
+                        <Image
+                            source={userInfo?.avatar === null ? require('../images/user.png') : { uri: userInfo?.avatar }}
+                            style={styles.profileStyle} />
                         <View style={styles.inputBox}>
-                            <Text style={styles.profileNameText}>{user.last_name} {user.first_name}</Text>
+                            <Text style={styles.profileNameText}>{user?.last_name} {user?.first_name}</Text>
                         </View>
                         <TouchableOpacity style={styles.profileExpandIcon}>
                             <VectorIcon
@@ -249,13 +252,15 @@ const PersonalScreen = ({ navigation }) => {
                                     </View>
                                 </TouchableOpacity>
                                 <Collapsible collapsed={!manageExpanded}>
-                                    <View style={styles.collapsibleSubItem}>
-                                        <VectorIcon
-                                            name="users-cog"
-                                            type="FontAwesome5"
-                                            size={19}
-                                        />
-                                        <Text style={styles.collapsibleSubItemBodyText}>Quản lý hệ thống</Text>
+                                    <View>
+                                        <TouchableOpacity style={styles.collapsibleSubItem}>
+                                            <VectorIcon
+                                                name="users-cog"
+                                                type="FontAwesome5"
+                                                size={19}
+                                            />
+                                            <Text style={styles.collapsibleSubItemBodyText}>Quản lý hệ thống</Text>
+                                        </TouchableOpacity>
                                     </View>
                                     <View>
                                         <TouchableOpacity style={styles.collapsibleSubItem} onPress={() => navigation.navigate("Quản lý tài khoản")}>
@@ -275,6 +280,16 @@ const PersonalScreen = ({ navigation }) => {
                                                 size={19}
                                             />
                                             <Text style={styles.collapsibleSubItemBodyText}>Quản lý nhóm</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                    <View>
+                                        <TouchableOpacity style={styles.collapsibleSubItem} onPress={() => navigation.navigate("Quản lý bài đăng")}>
+                                            <VectorIcon
+                                                name="post"
+                                                type="MaterialCommunityIcons"
+                                                size={19}
+                                            />
+                                            <Text style={styles.collapsibleSubItemBodyText}>Quản lý bài đăng</Text>
                                         </TouchableOpacity>
                                     </View>
                                 </Collapsible>

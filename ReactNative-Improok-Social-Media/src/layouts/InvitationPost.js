@@ -38,14 +38,17 @@ const InvitationPost = ({ navigation }) => {
     const [filteredAccountList, setFilteredAccountList] = useState([]);
 
     const renderItem = ({ item }) => {
-        const fullName = `${item.user.last_name} ${item.user.first_name}`;
-        const isMemberSelected = !!selectedMember.find(member => member.fullName === fullName);
+        const fullName = `${item.user?.last_name} ${item.user?.first_name}`;
+        // const isMemberSelected = !!selectedMember.find(member => member.fullName === fullName);
+
+        const memberId = item.user?.id;
+        const isMemberSelected = !!selectedMember.find(member => member.id === memberId);
 
         return (
             <Pressable
                 onPress={() => {
                     if (!isMemberSelected) {
-                        const newMember = { id: item.user.id, fullName, avatar: item.avatar, email: item.user.email };
+                        const newMember = { id: item.user?.id, fullName, avatar: item.avatar, email: item.user?.email };
                         setSelectedMember([...selectedMember, newMember]);
                         setInput('');
                     }
@@ -63,7 +66,7 @@ const InvitationPost = ({ navigation }) => {
                 disabled={isMemberSelected}
                 accessibilityState={{ selected: isMemberSelected }}>
                 <Image
-                    source={{ uri: item.avatar }}
+                    source={item.avatar === null ? require('../images/user.png') : { uri: item.avatar }}
                     style={{ width: 40, height: 40, borderRadius: 20 }} />
                 <Text style={{ fontSize: 16, marginLeft: 10 }}>{fullName}</Text>
             </Pressable>
@@ -94,7 +97,8 @@ const InvitationPost = ({ navigation }) => {
         if (text.length > 0) {
             const token = await AsyncStorage.getItem("token");
             let res = await djangoAuthApi(token).get(endpoints['search-user'](text));
-            console.log(res.data);
+            // let res = await djangoAuthApi(token).get(endpoints['cache-user'](text));
+            console.log("Đây là cache API", res.data);
             setFilteredAccountList(res.data);
             //console.log(filteredList);
         } else {
@@ -240,9 +244,10 @@ const InvitationPost = ({ navigation }) => {
         <>
             <ScrollView style={styles.scrollView}>
                 <View style={styles.profileContainer}>
-                    <Image source={{ uri: userInfo?.avatar }} style={styles.profileStyle} />
+                    <Image source={userInfo?.avatar === null ? require('../images/user.png') : { uri: userInfo?.avatar }}
+                        style={styles.profileStyle} />
                     <View style={styles.inputBox}>
-                        <Text style={styles.inputStyle}>{user.first_name} {user.last_name}</Text>
+                        <Text style={styles.inputStyle}>{user?.first_name} {user?.last_name}</Text>
                         <Text style={{ fontSize: 14, marginTop: 3 }}>Host - Administrator</Text>
                     </View>
                 </View>
@@ -256,66 +261,94 @@ const InvitationPost = ({ navigation }) => {
                 <View style={styles.dateTimeContainer}>
                     <View style={[styles.textInputStyle, { marginRight: 8 }]}>
                         <Text style={{ fontSize: 13, marginBottom: 8 }}>Ngày bắt đầu</Text>
-                        <TouchableOpacity onPress={() => showBeginMode("date")}>
-                            {/* <Text style={{ fontSize: 17 }}>{selectedBeginDate.toISOString().slice(0, 10)}</Text> */}
-                            <Text style={{ fontSize: 17 }}>{`${String(selectedBeginDate.getDate()).padStart(2, '0')}/${String(selectedBeginDate.getMonth() + 1).padStart(2, '0')}/${selectedBeginDate.getFullYear()}`}</Text>
-                            {showBeginDatePicker && (
-                                <DateTimePicker
-                                    value={selectedBeginDate}
-                                    mode={beginMode}
-                                    format="YYYY-MM-DD"
-                                    minimumDate={currentDate}
-                                    is24Hour={true}
-                                    maximumDate={new Date(2100, 0, 1)}
-                                    onChange={handleBeginDateChange} />)}
-                        </TouchableOpacity>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                            <TouchableOpacity onPress={() => showBeginMode("date")}>
+                                {/* <Text style={{ fontSize: 17 }}>{selectedBeginDate.toISOString().slice(0, 10)}</Text> */}
+                                <Text style={{ fontSize: 17 }}>{`${String(selectedBeginDate.getDate()).padStart(2, '0')}/${String(selectedBeginDate.getMonth() + 1).padStart(2, '0')}/${selectedBeginDate.getFullYear()}`}</Text>
+                                {showBeginDatePicker && (
+                                    <DateTimePicker
+                                        value={selectedBeginDate}
+                                        mode={beginMode}
+                                        format="YYYY-MM-DD"
+                                        minimumDate={currentDate}
+                                        is24Hour={true}
+                                        maximumDate={new Date(2100, 0, 1)}
+                                        onChange={handleBeginDateChange} />)}
+                            </TouchableOpacity>
+                            <VectorIcon
+                                name="calendar"
+                                type="AntDesign"
+                                size={17}
+                            />
+                        </View>
                     </View>
                     <View style={[styles.textInputStyle, { marginLeft: 8 }]}>
                         <Text style={{ fontSize: 13, marginBottom: 8 }}>Giờ bắt đầu</Text>
-                        <TouchableOpacity onPress={() => showBeginMode("time")}>
-                            <Text style={{ fontSize: 17 }}>
-                                {String(selectedBeginTime.getHours()).padStart(2, '0')}:
-                                {String(selectedBeginTime.getMinutes()).padStart(2, '0')}
-                            </Text>
-                            {showBeginTimePicker && (
-                                <DateTimePicker
-                                    value={selectedBeginTime}
-                                    mode={beginMode}
-                                    is24Hour={true}
-                                    onChange={handleBeginTimeChange} />)}
-                        </TouchableOpacity>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                            <TouchableOpacity onPress={() => showBeginMode("time")}>
+                                <Text style={{ fontSize: 17 }}>
+                                    {String(selectedBeginTime.getHours()).padStart(2, '0')}:
+                                    {String(selectedBeginTime.getMinutes()).padStart(2, '0')}
+                                </Text>
+                                {showBeginTimePicker && (
+                                    <DateTimePicker
+                                        value={selectedBeginTime}
+                                        mode={beginMode}
+                                        is24Hour={true}
+                                        onChange={handleBeginTimeChange} />)}
+                            </TouchableOpacity>
+                            <VectorIcon
+                                name="clockcircleo"
+                                type="AntDesign"
+                                size={17}
+                            />
+                        </View>
                     </View>
                 </View>
                 <View style={styles.dateTimeContainer}>
                     <View style={[styles.textInputStyle, { marginRight: 8 }]}>
                         <Text style={{ fontSize: 13, marginBottom: 8 }}>Ngày kết thúc</Text>
-                        <TouchableOpacity onPress={() => showEndMode("date")}>
-                            <Text style={{ fontSize: 17 }}><Text style={{ fontSize: 17 }}>{`${String(selectedBeginDate.getDate()).padStart(2, '0')}/${String(selectedBeginDate.getMonth() + 1).padStart(2, '0')}/${selectedBeginDate.getFullYear()}`}</Text></Text>
-                            {showEndDatePicker && (
-                                <DateTimePicker
-                                    value={selectedEndDate}
-                                    mode={endMode}
-                                    format="YYYY-MM-DD"
-                                    minimumDate={currentDate}
-                                    is24Hour={true}
-                                    maximumDate={new Date(2100, 0, 1)}
-                                    onChange={handleEndDateChange} />)}
-                        </TouchableOpacity>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                            <TouchableOpacity onPress={() => showEndMode("date")}>
+                                <Text style={{ fontSize: 17 }}><Text style={{ fontSize: 17 }}>{`${String(selectedEndDate.getDate()).padStart(2, '0')}/${String(selectedBeginDate.getMonth() + 1).padStart(2, '0')}/${selectedBeginDate.getFullYear()}`}</Text></Text>
+                                {showEndDatePicker && (
+                                    <DateTimePicker
+                                        value={selectedEndDate}
+                                        mode={endMode}
+                                        format="YYYY-MM-DD"
+                                        minimumDate={currentDate}
+                                        is24Hour={true}
+                                        maximumDate={new Date(2100, 0, 1)}
+                                        onChange={handleEndDateChange} />)}
+                            </TouchableOpacity>
+                            <VectorIcon
+                                name="calendar"
+                                type="AntDesign"
+                                size={17}
+                            />
+                        </View>
                     </View>
                     <View style={[styles.textInputStyle, { marginLeft: 8 }]}>
                         <Text style={{ fontSize: 13, marginBottom: 8 }}>Giờ kết thúc</Text>
-                        <TouchableOpacity onPress={() => showEndMode("time")}>
-                            <Text style={{ fontSize: 17 }}>
-                                {String(selectedEndTime.getHours()).padStart(2, '0')}:
-                                {String(selectedEndTime.getMinutes()).padStart(2, '0')}
-                            </Text>
-                            {showEndTimePicker && (
-                                <DateTimePicker
-                                    value={selectedEndTime}
-                                    mode={endMode}
-                                    is24Hour={true}
-                                    onChange={handleEndTimeChange} />)}
-                        </TouchableOpacity>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                            <TouchableOpacity onPress={() => showEndMode("time")}>
+                                <Text style={{ fontSize: 17 }}>
+                                    {String(selectedEndTime.getHours()).padStart(2, '0')}:
+                                    {String(selectedEndTime.getMinutes()).padStart(2, '0')}
+                                </Text>
+                                {showEndTimePicker && (
+                                    <DateTimePicker
+                                        value={selectedEndTime}
+                                        mode={endMode}
+                                        is24Hour={true}
+                                        onChange={handleEndTimeChange} />)}
+                            </TouchableOpacity>
+                            <VectorIcon
+                                name="clockcircleo"
+                                type="AntDesign"
+                                size={17}
+                            />
+                        </View>
                     </View>
                 </View>
                 <View style={styles.inputContainer}>
@@ -373,7 +406,9 @@ const InvitationPost = ({ navigation }) => {
                                     }
                                     {selectedMember.map((member, index) => (
                                         <View key={index} style={{ flexDirection: 'row', alignItems: 'center', borderWidth: 1, marginTop: 10, padding: 8, position: 'relative' }}>
-                                            <Image source={{ uri: member.avatar }} style={{ width: 40, height: 40, borderRadius: 20 }} />
+                                            <Image
+                                                source={member.avatar === null ? require('../images/user.png') : { uri: member.avatar }}
+                                                style={{ width: 40, height: 40, borderRadius: 20 }} />
                                             <Text style={{ marginLeft: 10, fontSize: 16 }}>{member.fullName}</Text>
                                             <TouchableOpacity onPress={() => removeMember(index)} style={{ position: 'absolute', right: 5 }}>
                                                 <VectorIcon name="delete" type="MaterialIcons" size={22} />

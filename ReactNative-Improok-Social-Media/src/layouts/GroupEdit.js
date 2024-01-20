@@ -5,7 +5,7 @@ import { useRoute } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { djangoAuthApi, endpoints } from '../configs/Apis';
 import VectorIcon from '../utils/VectorIcon';
-import { windowHeight, windowWidth } from '../utils/Dimensions';
+import { windowWidth } from '../utils/Dimensions';
 
 const GroupEdit = () => {
     const [user, dispatch] = useContext(MyUserContext);
@@ -19,6 +19,9 @@ const GroupEdit = () => {
     const [input, setInput] = useState('');
 
     const [filteredAccountList, setFilteredAccountList] = useState([]);
+
+    const [edit, setEdit] = useState(false)
+    const [tempGroupName, setTempGroupName] = useState("")
 
     // const renderItem = ({ item }) => {
     //     const fullName = `${item.user.last_name} ${item.user.first_name}`;
@@ -62,25 +65,36 @@ const GroupEdit = () => {
 
     const renderItem = ({ item }) => {
         const fullName = `${item.user.last_name} ${item.user.first_name}`;
-        const isMemberSelected = !!selectedMember.find(member => member.fullName === fullName);
+        // const isMemberSelected = !!selectedMember.find(member => member.fullName === fullName);
+        // const isMemberExists = memberList.some(member => {
+        //     const { first_name, last_name } = member.user;
+        //     const full_name = `${last_name} ${first_name}`;
+        //     return full_name === fullName;
+        // });
+
+        const memberId = `${item.user?.id}`;
+        const isMemberSelected = !!selectedMember.find(member => member.id == memberId);
         const isMemberExists = memberList.some(member => {
-            const { first_name, last_name } = member.user;
-            const full_name = `${last_name} ${first_name}`;
-            return full_name === fullName;
-        });
+            const { id } = member;
+            const idMember = `${id}`;
+            return idMember === memberId;
+        })
 
         const handlePress = () => {
             if (!isMemberSelected) {
                 const newMember = {
-                    id: item.user.id,
+                    id: item.user?.id,
                     fullName,
                     avatar: item.avatar,
-                    email: item.user.email
+                    email: item.user?.email
                 };
                 setSelectedMember([...selectedMember, newMember]);
                 setInput('');
                 console.log("tồn tại", isMemberExists);
                 console.log("đã chọn", isMemberSelected);
+                console.log(memberList);
+                console.log(selectedMember);
+                console.log(item.user?.id, memberId);
             }
         };
 
@@ -101,7 +115,7 @@ const GroupEdit = () => {
                 accessibilityState={{ selected: isMemberSelected }}
             >
                 <Image
-                    source={{ uri: item.avatar }}
+                    source={item.avatar === null ? require('../images/user.png') : { uri: item.avatar }}
                     style={{ width: 40, height: 40, borderRadius: 20 }}
                 />
                 <Text style={{ fontSize: 16, marginLeft: 10 }}>{fullName}</Text>
@@ -121,18 +135,19 @@ const GroupEdit = () => {
         }
     };
 
-    useEffect(() => {
-        const getMemberList = async () => {
-            try {
-                const token = await AsyncStorage.getItem("token");
-                let res = await djangoAuthApi(token).get(endpoints['view-member-by-invitation-group'](groupId))
-                setMemberList(res.data.accounts);
-                setGroupName(res.data.invitation_group_name);
-                console.log(res.data.accounts);
-            } catch (error) {
-                console.log(error);
-            }
+    const getMemberList = async () => {
+        try {
+            const token = await AsyncStorage.getItem("token");
+            let res = await djangoAuthApi(token).get(endpoints['view-member-by-invitation-group'](groupId))
+            setMemberList(res.data.accounts);
+            setGroupName(res.data.invitation_group_name);
+            console.log(res.data.accounts);
+        } catch (error) {
+            console.log(error);
         }
+    }
+
+    useEffect(() => {
         getMemberList();
     }, [])
 
@@ -154,6 +169,7 @@ const GroupEdit = () => {
                 }
             })
             console.log(res.data, res.status);
+            getMemberList();
             setSelectedMember([]);
         } catch (error) {
             console.log(error)
@@ -166,23 +182,106 @@ const GroupEdit = () => {
         setSelectedMember(updatedMembers);
     };
 
+    const deleteMember = async (memberId) => {
+        try {
+            console.info(memberId);
+            const token = await AsyncStorage.getItem("token");
+            let res = await djangoAuthApi(token).post(endpoints['delete-account-from-group'](groupId), {
+                "list_account_id": [
+                    memberId
+                ]
+            }, {
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            })
+            console.log('Sau khi xóa')
+            getMemberList();
+        } catch (error) {
+            getMemberList();
+            console.error(error)
+        }
+    }
+
+    const handleEdit = () => {
+        setTempGroupName(groupName); // Lưu trữ giá trị ban đầu trong biến tạm
+        setEdit(true);
+    };
+
+    const handleCancel = () => {
+        setGroupName(tempGroupName); // Khôi phục giá trị ban đầu từ biến tạm
+        setEdit(false);
+    };
+
+    const handleSave = async () => {
+        try {
+            const token = await AsyncStorage.getItem('token')
+            let res = await djangoAuthApi(token).patch(endpoints['patch-invitation-group'](groupId), {
+                "invitation_group_name": groupName
+            })
+            console.log(res.data)
+            setEdit(false);
+        } catch (error) {
+            console.log(error)
+        }
+    };
+
     return (
         <>
             <ScrollView>
                 <SafeAreaView>
                     <View style={styles.groupMemberContainer}>
-                        <Text style={styles.groupMemberHeaderText}>
-                            Danh sách thành viên nhóm {groupName}
-                        </Text>
+                        {edit === false ? <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                            <Text style={styles.groupMemberHeaderText}>
+                                {groupName}
+                            </Text>
+                            <TouchableOpacity onPress={() => handleEdit(true)}>
+                                <VectorIcon
+                                    name="edit"
+                                    type="FontAwesome5"
+                                    size={25}
+                                />
+                            </TouchableOpacity>
+                        </View> : <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                            <TextInput
+                                value={groupName}
+                                onChangeText={(newgroupName) => setGroupName(newgroupName)}
+                                style={{
+                                    height: 40,
+                                    marginHorizontal: 10,
+                                    borderWidth: 1,
+                                    padding: 10,
+                                    borderRadius: 5,
+                                    fontSize: 17,
+                                    width: 0.7 * windowWidth
+                                }}
+                            />
+                            <TouchableOpacity onPress={() => handleSave()}>
+                                <VectorIcon
+                                    name="check"
+                                    type="FontAwesome5"
+                                    size={25}
+                                />
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => handleCancel()}>
+                                <VectorIcon
+                                    name="remove"
+                                    type="FontAwesome"
+                                    size={25}
+                                />
+                            </TouchableOpacity>
+                        </View>}
                         {memberList.map(ml => {
                             return (
                                 <Fragment>
                                     <View style={styles.memberItem}>
-                                        <Image source={{ uri: ml.avatar }} style={{ width: 50, height: 50, borderRadius: 25, flex: 1.5 }} />
+                                        <Image
+                                            source={ml.avatar === null ? require('../images/user.png') : { uri: ml.avatar }}
+                                            style={{ width: 50, height: 50, borderRadius: 25, flex: 1.5 }} />
                                         <Text style={{ fontSize: 18, flex: 7.5, alignItems: 'center' }}>
                                             {ml.user.last_name} {ml.user.first_name}
                                         </Text>
-                                        <TouchableOpacity style={{ flex: 1 }}>
+                                        <TouchableOpacity style={{ flex: 1 }} onPress={() => deleteMember(ml.id)}>
                                             <VectorIcon
                                                 name="delete"
                                                 type="MaterialCommunityIcons"
@@ -233,7 +332,9 @@ const GroupEdit = () => {
                                     }
                                     {selectedMember.map((member, index) => (
                                         <View key={index} style={{ flexDirection: 'row', alignItems: 'center', borderWidth: 1, marginTop: 10, padding: 8, position: 'relative' }}>
-                                            <Image source={{ uri: member.avatar }} style={{ width: 40, height: 40, borderRadius: 20 }} />
+                                            <Image
+                                                source={member.avatar === null ? require('../images/user.png') : { uri: member.avatar }}
+                                                style={{ width: 40, height: 40, borderRadius: 20 }} />
                                             <Text style={{ marginLeft: 10, fontSize: 16 }}>{member.fullName}</Text>
                                             <TouchableOpacity onPress={() => removeMember(index)} style={{ position: 'absolute', right: 5 }}>
                                                 <VectorIcon name="delete" type="MaterialIcons" size={22} />

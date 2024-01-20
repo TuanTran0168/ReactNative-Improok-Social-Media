@@ -6,6 +6,7 @@ import axios from "axios";
 import { windowHeight, windowWidth } from "../utils/Dimensions";
 import VectorIcon from "../utils/VectorIcon";
 import { djangoAuthApi, endpoints } from "../configs/Apis";
+import Header from "../layouts/Header";
 
 const HomeScreen = ({ navigation }) => {
     const [postList, setPostList] = useState([]);
@@ -46,10 +47,15 @@ const HomeScreen = ({ navigation }) => {
 
     return (
         <Fragment>
-            <ScrollView refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-            }>
+            <Header />
+            <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+                style={{ backgroundColor: 'white' }}
+            >
                 <SubHeader />
+                <View style={{
+                    height: 5, backgroundColor: "lightgrey", marginTop: 15, marginBottom: 15
+                }}>
+                </View>
                 {postList.map((ph, index) => {
                     return (
                         <>
@@ -57,7 +63,9 @@ const HomeScreen = ({ navigation }) => {
                                 <View style={styles.postHeaderContainer}>
                                     <View style={styles.postTop}>
                                         <View style={styles.row}>
-                                            <Image source={{ uri: ph.account.avatar }} style={styles.userProfile} />
+                                            <Image
+                                                source={ph.account.avatar === null ? require('../images/user.png') : { uri: ph.account.avatar }}
+                                                style={styles.userProfile} />
                                             <View style={styles.userSection}>
                                                 <Text style={styles.username}>{ph.account.user.last_name} {ph.account.user.first_name}</Text>
                                                 <View style={styles.row}>

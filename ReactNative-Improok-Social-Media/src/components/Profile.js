@@ -1,13 +1,15 @@
-import { ScrollView, Image, StyleSheet, Text, View, TouchableOpacity, Modal, Button } from 'react-native';
-import React, { useContext, useEffect, useState } from 'react';
+import { ScrollView, Image, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import React, { Fragment, useContext, useEffect, useRef, useState } from 'react';
 import { MyUserContext } from '../../App';
 import VectorIcon from '../utils/VectorIcon';
 import { windowHeight, windowWidth } from '../utils/Dimensions';
 import CreatePost from '../layouts/CreatePost';
-import Timeline from '../layouts/Timeline';
 import { djangoAuthApi, endpoints } from '../configs/Apis';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
+import Post from '../layouts/Post';
+import { SPSheet } from 'react-native-popup-confirm-toast';
+import Modal from "react-native-modal";
 
 const Profile = ({ navigation }) => {
     const [user, dispatch] = useContext(MyUserContext);
@@ -15,7 +17,7 @@ const Profile = ({ navigation }) => {
 
     const [image, setImage] = useState();
 
-    const [showModal, setShowModal] = useState(false);
+    const postRef = useRef(null);
 
     const getCurrentUser = async () => {
         try {
@@ -30,6 +32,9 @@ const Profile = ({ navigation }) => {
     useEffect(() => {
         getCurrentUser();
     }, [userInfo])
+
+    const [isVisible, setVisible] = useState(false);
+    const [isAvatarVisible, setAvatarVisible] = useState(false);
 
     // const changeAvatar = async () => {
     //     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -69,7 +74,7 @@ const Profile = ({ navigation }) => {
     //     }
     // }
 
-    const changeAvatar = async () => {
+    const changeAvatar = async (spSheet) => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
         if (status !== 'granted') {
@@ -79,7 +84,8 @@ const Profile = ({ navigation }) => {
 
         const options = {
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsMultipleSelection: true,
+            allowsEditing: true,
+            aspect: [1, 1]
         };
 
         const result = await ImagePicker.launchImageLibraryAsync(options);
@@ -91,85 +97,277 @@ const Profile = ({ navigation }) => {
             const localUri = selectedImages.uri;
             console.log('Đường dẫn:', localUri);
             setImage(localUri);
-            setShowModal(true);
+            const token = await AsyncStorage.getItem('token');
+            let form = new FormData();
+            const filename = localUri.split('/').pop();
+            const match = /\.(\w+)$/.exec(filename);
+            const type = match ? `image/${match[1]}` : 'image';
+            form.append('avatar', { uri: localUri, name: filename, type });
+            let res = await djangoAuthApi(token).patch(endpoints['avatar-change'](userInfo?.id), form, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                }
+            })
+            console.log("Thông tin", localUri, filename, type);
+            console.log("Cái gì dậy?", res.data, res.status);
+            // setUserInfo(prevState => ({ ...prevState, avatar: image }));
+            getCurrentUser();
+            spSheet.hide()
         }
     }
 
-    const saveAvatar = async () => {
-        setShowModal(false);
-        const token = await AsyncStorage.getItem('token');
-        let form = new FormData();
-        const filename = image.split('/').pop();
-        const match = /\.(\w+)$/.exec(filename);
-        const type = match ? `image/${match[1]}` : 'image';
-        form.append('avatar', { uri: image, name: filename, type });
-        let res = await djangoAuthApi(token).patch(endpoints['avatar-change'](userInfo?.id), form, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            }
-        })
-        console.log("Thông tin", image, filename, type);
-        console.log("Cái gì dậy?", res.data, res.status);
-        setUserInfo(prevState => ({ ...prevState, avatar: image }));
-        getCurrentUser();
-        setShowModal(false);
+    const changeCoverAvatar = async (spSheet) => {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+        if (status !== 'granted') {
+            console.log('Permission not granted');
+            return;
+        }
+
+        const options = {
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [4, 3]
+        };
+
+        const result = await ImagePicker.launchImageLibraryAsync(options);
+
+        if (result.canceled) {
+            console.log('User cancelled image picker');
+        } else {
+            const selectedImages = result.assets[0];
+            const localUri = selectedImages.uri;
+            console.log('Đường dẫn:', localUri);
+            setImage(localUri);
+            const token = await AsyncStorage.getItem('token');
+            let form = new FormData();
+            const filename = localUri.split('/').pop();
+            const match = /\.(\w+)$/.exec(filename);
+            const type = match ? `image/${match[1]}` : 'image';
+            form.append('cover_avatar', { uri: localUri, name: filename, type });
+            let res = await djangoAuthApi(token).patch(endpoints['avatar-change'](userInfo?.id), form, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                }
+            })
+            console.log("Thông tin", localUri, filename, type);
+            console.log("Thành công nha", res.data, res.status);
+            // setUserInfo(prevState => ({ ...prevState, cover_avatar: image }));
+            getCurrentUser();
+            spSheet.hide()
+        }
     }
 
-    const saveCoverAvatar = async () => {
-        const token = await AsyncStorage.getItem('token');
-        let form = new FormData();
-        const filename = image.split('/').pop();
-        const match = /\.(\w+)$/.exec(filename);
-        const type = match ? `image/${match[1]}` : 'image';
-        form.append('cover_avatar', { uri: image, name: filename, type });
-        let res = await djangoAuthApi(token).patch(endpoints['cover-avatar-change'](userInfo?.id), form, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            }
-        })
-        console.log("Thành công nha", res.data, res.status);
-        setUserInfo(prevState => ({ ...prevState, cover_avatar: image }));
-        getCurrentUser();
-        setShowModal(false);
-    }
+    const handleProfileScroll = (event) => {
+        const { contentOffset, layoutMeasurement, contentSize } = event.nativeEvent;
+        const isEndOfScroll = contentOffset.y >= (contentSize.height - layoutMeasurement.height);
 
-    const cancelAvatar = () => {
-        setShowModal(false);
-        setImage(null);
-    }
+        if (isEndOfScroll) {
+            postRef.current.handleScroll(event);
+        }
+    };
 
-    return (
-        <>
-            <ScrollView>
-                <View>
-                    <Image source={{ uri: userInfo?.cover_avatar }} style={styles.coverPhoto} />
-                    <TouchableOpacity style={styles.avatarChange} onPress={() => changeAvatar()}>
-                        <View>
-                            <TouchableOpacity>
-                                <VectorIcon
-                                    name="camera"
-                                    type="FontAwesome5"
-                                    size={20}
-                                ></VectorIcon>
-                            </TouchableOpacity>
+    const avtarOption = (props) => {
+        return (
+            <Fragment>
+                <View style={{ padding: 20, flexDirection: 'column', gap: 15 }}>
+                    <TouchableOpacity onPress={() => { setAvatarVisible(true), props.spSheet.hide() }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <VectorIcon
+                                name="user-circle"
+                                type="FontAwesome5"
+                                size={25}
+                                style={{
+                                    backgroundColor: '#EBECF0',
+                                    height: 40,
+                                    width: 40,
+                                    borderRadius: 50,
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    marginRight: 10,
+                                }}
+                            />
+                            <Text>Xem ảnh đại diện</Text>
+                        </View>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => changeAvatar(props.spSheet)}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <VectorIcon
+                                name="images"
+                                type="FontAwesome5"
+                                size={25}
+                                style={{
+                                    backgroundColor: '#EBECF0',
+                                    height: 40,
+                                    width: 40,
+                                    borderRadius: 50,
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    marginRight: 10,
+                                }}
+                            />
+                            <Text>Chọn ảnh đại diện</Text>
                         </View>
                     </TouchableOpacity>
                 </View>
-                <View style={styles.avatarContainer}>
-                    <Image style={styles.avatar} source={{ uri: userInfo?.avatar }} />
-                    <TouchableOpacity style={styles.avatarChange} onPress={() => changeAvatar()}>
-                        <View>
+            </Fragment>
+        );
+    };
+
+    const coverOption = (props) => {
+        return (
+            <Fragment>
+                <View style={{ padding: 20, flexDirection: 'column', gap: 15 }}>
+                    <TouchableOpacity onPress={() => { setVisible(true), props.spSheet.hide() }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <VectorIcon
+                                name="image"
+                                type="FontAwesome5"
+                                size={25}
+                                style={{
+                                    backgroundColor: '#EBECF0',
+                                    height: 40,
+                                    width: 40,
+                                    borderRadius: 50,
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    marginRight: 10,
+                                }}
+                            />
+                            <Text>Xem ảnh bìa</Text>
+                        </View>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => changeCoverAvatar(props.spSheet)}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <VectorIcon
+                                name="upload"
+                                type="FontAwesome5"
+                                size={25}
+                                style={{
+                                    backgroundColor: '#EBECF0',
+                                    height: 40,
+                                    width: 40,
+                                    borderRadius: 50,
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    marginRight: 10,
+                                }}
+                            />
+                            <Text>Chọn ảnh bìa</Text>
+                        </View>
+                    </TouchableOpacity>
+                </View>
+            </Fragment>
+        );
+    };
+
+    return (
+        <>
+            <ScrollView onScroll={handleProfileScroll}
+                scrollEventThrottle={16}>
+                <View>
+                    <TouchableOpacity
+                        onPress={() => {
+                            const spSheet = SPSheet;
+                            spSheet.show({
+                                component: () => coverOption({ ...this.props, spSheet }),
+                                dragFromTopOnly: true,
+                                height: 0.2 * windowHeight
+                            });
+                        }}>
+                        <Image
+                            source={userInfo?.cover_avatar === null ? require('../images/picture.png') : { uri: userInfo?.cover_avatar }}
+                            style={styles.coverPhoto} />
+                        <TouchableOpacity style={styles.coverAvatarChange}
+                            onPress={() => {
+                                const spSheet = SPSheet;
+                                spSheet.show({
+                                    component: () => coverOption({ ...this.props, spSheet }),
+                                    dragFromTopOnly: true,
+                                    height: 0.25 * windowHeight
+                                });
+                            }}
+                        >
                             <VectorIcon
                                 name="camera"
                                 type="FontAwesome5"
                                 size={20}
                             ></VectorIcon>
-                        </View>
+                        </TouchableOpacity>
                     </TouchableOpacity>
+                    <Modal
+                        isVisible={isVisible}
+                        animationIn={'slideInUp'}
+                        animationInTiming={150}
+                        animationOut={'slideOutDown'}
+                        backdropColor='black'
+                        backdropOpacity={1}
+                        animationOutTiming={150}
+                        swipeDirection='down'
+                        onSwipeComplete={() => {
+                            setVisible(false)
+                        }}
+                        onBackdropPress={() => {
+                            setVisible(false)
+                        }}
+                    >
+                        <View style={{ width: windowWidth }}>
+                            <Image
+                                source={userInfo?.cover_avatar === null ? require('../images/picture.png') : { uri: userInfo?.cover_avatar }}
+                                style={{ width: '100%', height: windowHeight / 3 }} />
+                        </View>
+                    </Modal>
                 </View>
+                <TouchableOpacity style={styles.avatarContainer}
+                    onPress={() => {
+                        const spSheet = SPSheet;
+                        spSheet.show({
+                            component: () => avtarOption({ ...this.props, spSheet }),
+                            dragFromTopOnly: true,
+                            height: 0.21 * windowHeight
+                        });
+                    }}>
+                    <Image style={styles.avatar}
+                        source={userInfo?.avatar === null ? require('../images/user.png') : { uri: userInfo?.avatar }} />
+                    <TouchableOpacity style={styles.avatarChange}
+                        onPress={() => {
+                            const spSheet = SPSheet;
+                            spSheet.show({
+                                component: () => avtarOption({ ...this.props, spSheet }),
+                                dragFromTopOnly: true,
+                                height: 0.21 * windowHeight
+                            });
+                        }}>
+                        <VectorIcon
+                            name="camera"
+                            type="FontAwesome5"
+                            size={20}
+                        ></VectorIcon>
+                    </TouchableOpacity>
+                    <Modal
+                        isVisible={isAvatarVisible}
+                        animationIn={'slideInUp'}
+                        animationInTiming={150}
+                        animationOut={'slideOutDown'}
+                        backdropColor='black'
+                        backdropOpacity={1}
+                        animationOutTiming={150}
+                        swipeDirection='down'
+                        onBackdropPress={() => {
+                            setAvatarVisible(false)
+                        }}
+                        onSwipeComplete={() => {
+                            setAvatarVisible(false)
+                        }}
+                    >
+                        <View style={{ width: windowWidth }}>
+                            <Image source={userInfo?.avatar === null ? require('../images/user.png') : { uri: userInfo?.avatar }}
+                                style={{ width: '100%', height: windowHeight / 3 }} />
+                        </View>
+                    </Modal>
+                </TouchableOpacity>
                 <Text style={styles.name}>{user.last_name} {user.first_name}</Text>
                 <Text style={styles.shortBio}>Trưởng phòng Y Tế Nhà Bè</Text>
-
                 <View style={styles.profileTabsContainer}>
                     <View style={styles.tabContainer}>
                         <View style={styles.tabImageContainer}>
@@ -234,26 +432,8 @@ const Profile = ({ navigation }) => {
                 </View>
                 <View style={styles.divider}></View>
                 <CreatePost navigation={navigation} />
-                <Timeline />
+                <Post ref={postRef} />
             </ScrollView>
-            <Modal visible={showModal} animationType="slide">
-                <View style={styles.modalContainer}>
-                    <Image source={{ uri: image }} style={styles.modalImage} />
-                    <View style={styles.modalButtons}>
-                        <Button title="Lưu" onPress={saveAvatar} />
-                        <Button title="Hủy" onPress={cancelAvatar} />
-                    </View>
-                </View>
-            </Modal>
-            <Modal visible={showModal} animationType="slide">
-                <View style={styles.modalContainer}>
-                    <Image source={{ uri: image }} style={styles.modalImage} />
-                    <View style={styles.modalButtons}>
-                        <Button title="Lưu" onPress={saveCoverAvatar} />
-                        <Button title="Hủy" onPress={cancelAvatar} />
-                    </View>
-                </View>
-            </Modal>
         </>
     );
 };
@@ -271,7 +451,7 @@ const styles = StyleSheet.create({
         height: 160,
         width: 160,
         borderRadius: 200,
-        backgroundColor: 'blue',
+        backgroundColor: 'white',
         position: 'absolute',
         alignSelf: 'left',
         marginTop: windowHeight / 10,
@@ -280,8 +460,8 @@ const styles = StyleSheet.create({
         marginLeft: 10
     },
     avatar: {
-        height: '90%',
-        width: '90%',
+        height: '95%',
+        width: '95%',
         borderRadius: 72
     },
     avatarChange: {
@@ -303,8 +483,8 @@ const styles = StyleSheet.create({
         position: 'absolute',
         justifyContent: 'center',
         alignItems: 'center',
-        right: 0,
-        bottom: 0
+        right: 15,
+        bottom: 10
     },
     name: {
         alignSelf: 'flex-start',
