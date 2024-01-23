@@ -1,7 +1,7 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React, { createContext, useReducer } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { NativeRouter } from 'react-router-native';
 import MyUserReducer from "./src/reducers/MyUserReducer";
 import Login from './src/components/Login';
@@ -29,6 +29,10 @@ import Toast from 'react-native-toast-message';
 import PostManagement from './src/layouts/PostManagement';
 import SurveyStats from './src/layouts/SurveyStats';
 import { Root as PopupRootProvider } from 'react-native-popup-confirm-toast';
+import Search from './src/layouts/Search';
+import ChatScreen from './src/screen/ChatScreen';
+import MessageScreen from './src/screen/MessageScreen';
+import ProfileUser from './src/components/ProfileUser';
 // import { NativeBaseConfigProvider } from 'native-base/lib/typescript/core/NativeBaseContext';
 
 export const MyUserContext = createContext();
@@ -44,11 +48,11 @@ export default function App() {
           <NativeRouter>
             <NavigationContainer>
               <Stack.Navigator>
-                <Stack.Screen name="Đăng nhập" component={Login} options={{ headerShown: false }} />
-                <Stack.Screen name="Đăng ký" component={Register} />
-                <Stack.Screen name="Trang chủ" component={MainScreen} options={{ headerShown: false }} />
+                <Stack.Screen name="Login" component={Login} options={{ headerShown: false }} />
+                <Stack.Screen name="Register" component={Register} />
+                <Stack.Screen name="Homepage" component={MainScreen} options={{ headerShown: false }} />
                 <Stack.Screen
-                  name="Trang cá nhân"
+                  name="Profile"
                   component={Profile}
                   options={{
                     headerTitleAlign: 'center',
@@ -71,22 +75,72 @@ export default function App() {
                     )
                   }}
                 />
-                <Stack.Screen name="Post" component={Post} />
-                <Stack.Screen name="Bài đăng" component={StatusPost} />
-                <Stack.Screen name="Bình luận" component={Comment} />
-                <Stack.Screen name="Quản lý tài khoản" component={AccountManagement} />
-                <Stack.Screen name="Quản lý nhóm" component={GroupManagement} />
-                <Stack.Screen name="Thành viên nhóm" component={GroupMember} />
-                <Stack.Screen name="Chỉnh sửa nhóm" component={GroupEdit} />
-                <Stack.Screen name="Tạo sự kiện" component={InvitationPost} />
-                <Stack.Screen name="Tạo khảo sát" component={SurveyPost} />
+                <Stack.Screen name="Timeline" component={Post} />
+                <Stack.Screen name="Post" component={StatusPost} />
+                <Stack.Screen name="Comment" component={Comment} />
+                <Stack.Screen name="Account management" component={AccountManagement} />
+                <Stack.Screen name="Group management" component={GroupManagement} />
+                <Stack.Screen name="Group member" component={GroupMember} />
+                <Stack.Screen name="Alter group" component={GroupEdit} />
+                <Stack.Screen name="Create event" component={InvitationPost} />
+                <Stack.Screen name="Create survey" component={SurveyPost} />
                 <Stack.Screen name="Tạo đơn khảo sát" component={SurveyForm} />
                 <Stack.Screen name="Test" component={FormTest} />
-                <Stack.Screen name="Khảo sát" component={Survey} />
-                <Stack.Screen name="Sự kiện" component={Invitation} />
-                <Stack.Screen name="Chi tiết khảo sát" component={SurveyDetail} />
-                <Stack.Screen name="Quản lý bài đăng" component={PostManagement} />
-                <Stack.Screen name="Thống kê khảo sát" component={SurveyStats} />
+                <Stack.Screen name="Survey" component={Survey} />
+                <Stack.Screen name="Event" component={Invitation} />
+                <Stack.Screen name="Survey detail" component={SurveyDetail} />
+                <Stack.Screen name="Post management" component={PostManagement} />
+                <Stack.Screen name="Survey stats" component={SurveyStats} />
+                <Stack.Screen name="Search" component={Search} />
+                <Stack.Screen name="Chat room" component={MessageScreen}
+                  options={{
+                    headerRight: () => (
+                      <View style={{ flexDirection: 'row', gap: 8 }}>
+                        <TouchableOpacity>
+                          <FontAwesome5.Button
+                            name="cog"
+                            size={20}
+                            backgroundColor="#fff"
+                            color="black"
+                          />
+                        </TouchableOpacity>
+                        <TouchableOpacity>
+                          <FontAwesome5.Button
+                            name="search"
+                            size={20}
+                            backgroundColor="#fff"
+                            color="black"
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    )
+                  }}
+                />
+                <Stack.Screen name="Message" component={ChatScreen}
+                  options={{
+                    headerRight: () => (
+                      <View style={{ flexDirection: 'row', gap: 8 }}>
+                        <TouchableOpacity>
+                          <FontAwesome5.Button
+                            name="cog"
+                            size={20}
+                            backgroundColor="#fff"
+                            color="black"
+                          />
+                        </TouchableOpacity>
+                        <TouchableOpacity>
+                          <FontAwesome5.Button
+                            name="search"
+                            size={20}
+                            backgroundColor="#fff"
+                            color="black"
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    )
+                  }}
+                />
+                <Stack.Screen name='User profile' component={ProfileUser} />
               </Stack.Navigator>
               <Toast />
             </NavigationContainer>
@@ -103,5 +157,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  headerContainer: {
+    backgroundColor: '#F5F5F5',
+    padding: 10,
+  },
+  input: {
+    height: 40,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    paddingHorizontal: 10,
   },
 });

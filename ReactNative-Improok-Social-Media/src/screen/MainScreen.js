@@ -2,17 +2,18 @@ import React, { Fragment } from 'react';
 import PersonalScreen from './PersonalScreen';
 import NotificationScreen from './NotificationScreen';
 import StatusPost from '../layouts/StatusPost';
-import MessageScreen from './MessageScreen';
 import HomeScreen from './HomeScreen';
+import MessageScreen from './MessageScreen'
 import VectorIcon from '../utils/VectorIcon';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { TouchableOpacity, View } from 'react-native';
 import FontAwesome5Icon from 'react-native-vector-icons/FontAwesome5';
-import ChatScreen from './ChatScreen';
+import { useNavigation } from '@react-navigation/native';
 
 const Tab = createBottomTabNavigator();
 
 const MainScreen = () => {
+    const navigation = useNavigation()
     return (
         <Fragment>
             <Tab.Navigator
@@ -34,12 +35,12 @@ const MainScreen = () => {
                         />
                     )
                 }} />
-                <Tab.Screen name='Message' component={ChatScreen} options={{
+                <Tab.Screen name='Chat room' component={MessageScreen} options={{
                     tabBarLabelStyle: { color: '#591aaf' },
                     tabBarIcon: ({ focused }) => (
                         <VectorIcon
                             type={focused ? "Ionicons" : "Ionicons"}
-                            name={focused ? "chatbox" : "chatbox-outline"}
+                            name={focused ? "chatbubble" : "chatbubble-outline"}
                             size={focused ? 26 : 26}
                             color={focused ? "#591aaf" : "#000"}
                         />),
