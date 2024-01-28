@@ -1,10 +1,10 @@
 import { MyUserContext } from '../../App';
-import { useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { ScrollView, Image, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import VectorIcon from '../utils/VectorIcon';
 import { windowHeight, windowWidth } from '../utils/Dimensions';
-import { djangoAuthApi, endpoints } from '../configs/Apis';
+import Apis, { djangoAuthApi, endpoints } from '../configs/Apis';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Modal from "react-native-modal";
 import PostUser from '../layouts/PostUser';
@@ -14,23 +14,25 @@ const ProfileUser = () => {
     const route = useRoute()
     const { uid } = route.params
 
-    const [userInfo, setUserInfo] = useState();
+    const [userInfo, setUserInfo] = useState()
+    const [profileInfo, setProfileInfo] = useState()
 
     const [profile, setProfile] = useState()
 
     const postRef = useRef(null);
+    const navigation = useNavigation()
 
-    const getCurrentUser = async () => {
+    const getCurrentProfile = async () => {
         try {
             const token = await AsyncStorage.getItem('token');
             let res = await djangoAuthApi(token).get(endpoints['get-account-by-user'](uid))
-            setUserInfo(res.data);
+            setProfileInfo(res.data);
         } catch (err) {
             console.log(err)
         }
     }
 
-    const getUser = async () => {
+    const getProfile = async () => {
         try {
             const token = await AsyncStorage.getItem('token')
             let res = await djangoAuthApi(token).get(endpoints['get-user-by-id'](uid))
@@ -41,9 +43,20 @@ const ProfileUser = () => {
         }
     }
 
+    const getCurrentUser = async () => {
+        try {
+            const token = await AsyncStorage.getItem('token');
+            let res = await djangoAuthApi(token).get(endpoints['get-account-by-user'](user.id))
+            setUserInfo(res.data);
+        } catch (error) {
+            consolelog(error)
+        }
+    }
+
     useEffect(() => {
+        getCurrentProfile()
+        getProfile()
         getCurrentUser()
-        getUser()
     }, [])
 
     const [isVisible, setVisible] = useState(false);
@@ -58,6 +71,135 @@ const ProfileUser = () => {
         }
     };
 
+    // const createRoom = async () => {
+    //     try {
+    //         const token = await AsyncStorage.getItem('token')
+    //         console.log("", user.id, profile.id)
+    //         let res = await djangoAuthApi(token).post(endpoints['create-room'], {
+    //             "first_user": user.id,
+    //             "second_user": profile.id
+    //         })
+    //         console.log(res.data)
+    //     } catch (error) {
+    //         const token = await AsyncStorage.getItem('token')
+    //         console.log(error.response.data.error)
+    //         console.log("first_user:", user.id, "second_user:", profile.id)
+    //         try {
+    //             if (error.response.data.error === "Room already exists.") {
+    //                 let res = await Apis.get(endpoints['find-room'], {
+    //                     "first_user": user.id,
+    //                     "second_user": profile.id
+    //                 });
+    //                 console.log("Phòng", res.data.results[0])
+    //                 const roomInfo = res.data.results[0]
+    //                 if (roomInfo.first_user.id === user.id) {
+    //                     navigation.navigate('Message', {
+    //                         roomId: roomInfo.id,
+    //                         firstName: roomInfo.second_user?.user?.first_name,
+    //                         lastName: roomInfo.second_user?.user?.last_name,
+    //                         avatar: roomInfo.second_user?.avatar,
+    //                     });
+    //                     console.log(roomInfo.id, roomInfo.second_user?.user?.first_name, roomInfo.second_user?.user?.last_name, roomInfo.second_user?.avatar)
+    //                 } else {
+    //                     navigation.navigate('Message', {
+    //                         roomId: roomInfo.id,
+    //                         firstName: roomInfo.first_user?.user?.first_name,
+    //                         lastName: roomInfo.first_user?.user?.last_name,
+    //                         avatar: roomInfo.first_user?.avatar,
+    //                     });
+    //                     console.log(roomInfo.id, roomInfo.first_user?.user?.first_name, roomInfo.first_user?.user?.last_name, roomInfo.first_user?.avatar)
+    //                 }
+    //             }
+    //         } catch (error) {
+    //             console.log(error.response.data.error)
+    //         }
+    //     }
+    // }
+
+    const createRoom = async () => {
+        try {
+            const token = await AsyncStorage.getItem('token')
+            console.log(user.id, profile.id)
+            let res = await djangoAuthApi(token).post(endpoints['create-room'], {
+                "first_user": userInfo?.id,
+                "second_user": profileInfo?.id
+            })
+            console.log(res.data)
+            let nav = await Apis.post(endpoints['find-room'], {
+                "first_user": userInfo?.id,
+                "second_user": profileInfo?.id
+            });
+            console.log("Phòng", nav.data[0])
+            const roomInfo = nav.data[0]
+            if (roomInfo.first_user.id === user.id) {
+                navigation.navigate('Message', {
+                    roomId: roomInfo.id,
+                    firstName: roomInfo.second_user?.user?.first_name,
+                    lastName: roomInfo.second_user?.user?.last_name,
+                    avatar: roomInfo.second_user?.avatar,
+                });
+                // console.log(roomInfo.id, roomInfo.second_user?.user?.first_name, roomInfo.second_user?.user?.last_name, roomInfo.second_user?.avatar)
+            } else {
+                navigation.navigate('Message', {
+                    roomId: roomInfo.id,
+                    firstName: roomInfo.first_user?.user?.first_name,
+                    lastName: roomInfo.first_user?.user?.last_name,
+                    avatar: roomInfo.first_user?.avatar,
+                });
+                // console.log(roomInfo.id, roomInfo.first_user?.user?.first_name, roomInfo.first_user?.user?.last_name, roomInfo.first_user?.avatar)
+            }
+        } catch (error) {
+            const token = await AsyncStorage.getItem('token')
+            console.log(error.response.data.error)
+            console.log("first_user:", user.id, "second_user:", profile.id)
+            try {
+                if (error.response.data.error === "Room already exists.") {
+                    let res = await Apis.post(endpoints['find-room'], {
+                        "first_user": userInfo?.id,
+                        "second_user": profileInfo?.id
+                    });
+                    console.log("Phòng", res.data[0])
+                    const roomInfo = res.data[0]
+                    if (roomInfo.first_user.id === user.id) {
+                        navigation.navigate('Message', {
+                            roomId: roomInfo.id,
+                            firstName: roomInfo.second_user?.user?.first_name,
+                            lastName: roomInfo.second_user?.user?.last_name,
+                            avatar: roomInfo.second_user?.avatar,
+                        });
+                        // console.log(roomInfo.id, roomInfo.second_user?.user?.first_name, roomInfo.second_user?.user?.last_name, roomInfo.second_user?.avatar)
+                    } else {
+                        navigation.navigate('Message', {
+                            roomId: roomInfo.id,
+                            firstName: roomInfo.first_user?.user?.first_name,
+                            lastName: roomInfo.first_user?.user?.last_name,
+                            avatar: roomInfo.first_user?.avatar,
+                        });
+                        // console.log(roomInfo.id, roomInfo.first_user?.user?.first_name, roomInfo.first_user?.user?.last_name, roomInfo.first_user?.avatar)
+                    }
+                }
+            } catch (error) {
+                console.log(error.response.data.error)
+            }
+        }
+    }
+
+    // const checkvar = async () => {
+    //     try {
+    //         let res = await Apis.get(endpoints['find-room'], {
+    //             "first_user": 1,
+    //             "second_user": 2
+    //         }, {
+    //             headers: {
+    //                 "Content-Type": "application/json"
+    //             }
+    //         });
+    //         console.log(res.data.results)
+    //     } catch (error) {
+    //         console.log(error)
+    //     }
+    // }
+
     return (
         <>
             <ScrollView onScroll={handleProfileScroll}
@@ -66,7 +208,7 @@ const ProfileUser = () => {
                     <TouchableOpacity
                         onPress={() => setVisible(true)}>
                         <Image
-                            source={userInfo?.cover_avatar === null ? require('../images/picture.png') : { uri: userInfo?.cover_avatar }}
+                            source={profileInfo?.cover_avatar === null ? require('../images/picture.png') : { uri: profileInfo?.cover_avatar }}
                             style={styles.coverPhoto} />
                     </TouchableOpacity>
                     <Modal
@@ -87,7 +229,7 @@ const ProfileUser = () => {
                     >
                         <View style={{ width: windowWidth }}>
                             <Image
-                                source={userInfo?.cover_avatar === null ? require('../images/picture.png') : { uri: userInfo?.cover_avatar }}
+                                source={profileInfo?.cover_avatar === null ? require('../images/picture.png') : { uri: profileInfo?.cover_avatar }}
                                 style={{ width: '100%', height: windowHeight / 3 }} />
                         </View>
                     </Modal>
@@ -95,7 +237,7 @@ const ProfileUser = () => {
                 <TouchableOpacity style={styles.avatarContainer}
                     onPress={() => setAvatarVisible(true)}>
                     <Image style={styles.avatar}
-                        source={userInfo?.avatar === null ? require('../images/user.png') : { uri: userInfo?.avatar }} />
+                        source={profileInfo?.avatar === null ? require('../images/user.png') : { uri: profileInfo?.avatar }} />
                     <Modal
                         isVisible={isAvatarVisible}
                         animationIn={'slideInUp'}
@@ -113,7 +255,7 @@ const ProfileUser = () => {
                         }}
                     >
                         <View style={{ width: windowWidth }}>
-                            <Image source={userInfo?.avatar === null ? require('../images/user.png') : { uri: userInfo?.avatar }}
+                            <Image source={profileInfo?.avatar === null ? require('../images/user.png') : { uri: profileInfo?.avatar }}
                                 style={{ width: '100%', height: windowHeight / 3 }} />
                         </View>
                     </Modal>
@@ -121,48 +263,26 @@ const ProfileUser = () => {
                 <Text style={styles.name}>{profile?.last_name} {profile?.first_name}</Text>
                 <Text style={styles.shortBio}>Trưởng phòng Y Tế Nhà Bè</Text>
                 <View style={styles.profileTabsContainer}>
-                    <View style={styles.tabContainer}>
-                        <View style={styles.tabImageContainer}>
-                            <VectorIcon
-                                name="plus"
-                                type="FontAwesome5"
-                                size={20}
-                            ></VectorIcon>
-                        </View>
-                        <Text style={styles.tabText}>Add Story</Text>
-                    </View>
-                    <View style={styles.tabContainer}>
-                        <View style={styles.tabImageContainer}>
-                            <VectorIcon
-                                name="user"
-                                type="FontAwesome5"
-                                size={20}
-                            ></VectorIcon>
-                        </View>
-                        <Text style={styles.tabText}>Edit Profile</Text>
-                    </View>
-                    <View style={styles.tabContainer}>
-                        <View style={styles.tabImageContainer}>
-                            <VectorIcon
-                                name="list"
-                                type="FontAwesome5"
-                                size={20}
-                            ></VectorIcon>
-                        </View>
-                        <Text style={styles.tabText}>Activity Log</Text>
-                    </View>
-                    <View style={styles.tabContainer}>
-                        <View style={styles.tabImageContainer}>
-                            <VectorIcon
-                                name="dots-horizontal-circle"
-                                type="MaterialCommunityIcons"
-                                size={20}
-                            ></VectorIcon>
-                        </View>
-                        <Text style={styles.tabText}>More</Text>
-                    </View>
+                    <TouchableOpacity style={[styles.tabContainer, { backgroundColor: '#591aaf' }]}
+                        onPress={() => createRoom()}>
+                        <VectorIcon
+                            name="chatbubble-ellipses-outline"
+                            type="Ionicons"
+                            size={22}
+                            color='white'
+                        ></VectorIcon>
+                        <Text style={[styles.tabText, { color: 'white' }]}>Message</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.tabContainer, { backgroundColor: 'lightgray' }]}>
+                        <VectorIcon
+                            name="information-circle-outline"
+                            type="Ionicons"
+                            size={22}
+                            color='black'
+                        ></VectorIcon>
+                        <Text style={[styles.tabText, { color: 'black' }]}>Information</Text>
+                    </TouchableOpacity>
                 </View>
-                {/* <View style={styles.divider}></View> */}
                 <View style={styles.aboutheadingContainer}>
                     <Text style={styles.aboutText}>About</Text>
                     <Text style={styles.seeAllText}>See All</Text>
@@ -179,7 +299,7 @@ const ProfileUser = () => {
                     ></VectorIcon>
                     <Text style={{ fontSize: 18, marginLeft: 10 }}>Lives in</Text>
                     <Text style={{ fontSize: 18, fontWeight: 'bold', marginLeft: 5 }}>
-                        Binh Thanh
+                        Hau Giang
                     </Text>
                 </View>
                 <View style={styles.divider}></View>
@@ -233,30 +353,26 @@ const styles = StyleSheet.create({
         height: 100,
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-around',
+        justifyContent: 'space-evenly',
     },
     tabContainer: {
-        height: 90,
-        width: windowWidth / 4.2,
+        height: 40,
+        width: windowWidth / 2.5,
         alignItems: 'center',
         justifyContent: 'center',
+        flexDirection: 'row',
+        borderRadius: 10,
+        gap: 8
     },
     tabImage: {
         height: 30,
         width: 30,
     },
-    tabImageContainer: {
-        height: 50,
-        width: 50,
-        backgroundColor: 'lightgray',
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderRadius: 60,
-    },
     tabText: {
         fontSize: 16,
         fontWeight: 'bold',
         marginTop: 5,
+        alignItems: 'center'
     },
     divider: {
         height: 2,

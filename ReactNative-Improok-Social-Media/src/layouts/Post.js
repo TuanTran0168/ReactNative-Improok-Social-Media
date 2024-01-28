@@ -266,7 +266,7 @@ const Post = React.forwardRef((props, ref) => {
                             <Text>Pin Post</Text>
                         </View>
                     </TouchableOpacity>
-                    <TouchableOpacity>
+                    <TouchableOpacity onPress={() => navigation.navigate("Edit Post", {postId: props.phId})}>
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                             <VectorIcon
                                 name="edit"
@@ -625,7 +625,7 @@ const Post = React.forwardRef((props, ref) => {
                                             </Modal>
                                         </View>
                                         <View>
-                                            <TouchableOpacity style={styles.row} onPress={() => navigation.navigate('Comment', { postId: ph.id })}>
+                                            <TouchableOpacity style={styles.row} onPress={() => navigation.navigate('Comment', { postId: ph.id, accountId: ph.account })}>
                                                 <VectorIcon
                                                     name="chatbox-outline"
                                                     type="Ionicons"
@@ -766,7 +766,7 @@ const styles = StyleSheet.create({
     },
     image: {
         width: '100%',
-        height: '100%'
+        height: '100%',
     }
 });
 

@@ -8,13 +8,18 @@ import { djangoAuthApi, endpoints } from '../configs/Apis';
 import { Button } from 'native-base';
 import { collection, addDoc } from 'firebase/firestore';
 import { database } from '../configs/Firebase';
+import { useRoute } from '@react-navigation/native';
 
-const StatusPost = ({ navigation }) => {
+const EditPost = ({ navigation }) => {
     const [user, dispatch] = useContext(MyUserContext)
     const [account, accountDispatch] = useContext(MyAccountContext)
     const [text, setText] = useState('')
     const [userInfo, setUserInfo] = useState()
     const [selectedImages, setSelectedImages] = useState([])
+    const [postDetail, setPostDetail] = useState([])
+
+    const route = useRoute()
+    const {postId} = route.params
 
     const getCurrentUser = async () => {
         try {
@@ -48,6 +53,21 @@ const StatusPost = ({ navigation }) => {
             console.log(error)
         }
     }
+
+    const getPost = async () => {
+        try {
+            const token = await AsyncStorage.getItem('token')
+            let res = await djangoAuthApi(token).get(endpoints['get-post-by-post-id'](postId))
+            console.log(res.data)
+            setPostDetail(res.data)
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
+    useEffect(() => {
+        getPost()
+    }, [])
 
     const openImagePicker = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
@@ -136,6 +156,19 @@ const StatusPost = ({ navigation }) => {
         });
     }, []);
 
+    const updatePost = async () => {
+        try {
+            const token = await AsyncStorage.getItem('token')
+            let res = await djangoAuthApi(token).patch(endpoints['update-post'](postId), {
+                "post_content": text
+            })
+            console.log(res.data)
+            navigation.navigate('Homepage')
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
     return (
         <>
             <ScrollView contentContainerStyle={styles.container}>
@@ -150,8 +183,8 @@ const StatusPost = ({ navigation }) => {
                     <TextInput
                         multiline
                         numberOfLines={10}
-                        value={text}
-                        onChangeText={setText}
+                        defaultValue={postDetail.post_content}
+                        onChangeText={(text) => setText(text)}
                         placeholder="What's on your mind?"
                         style={styles.textInputStyle}
                         blurOnSubmit={true}
@@ -251,13 +284,9 @@ const StatusPost = ({ navigation }) => {
                 </View>
                 <View>
                     <Button onPress={() => {
-                        if (selectedImages.length !== 0) {
-                            createImagePost()
-                        } else {
-                            createPost()
-                        }
+                        updatePost()
                     }} variant="subtle" colorScheme="darkBlue" isDisabled={!text.trim()} style={styles.postContainer}>
-                        Post
+                        Update
                     </Button>
                 </View>
             </ScrollView>
@@ -346,4 +375,4 @@ const styles = StyleSheet.create({
     }
 });
 
-export default StatusPost;
+export default EditPost;

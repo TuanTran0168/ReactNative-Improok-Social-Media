@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const MyUserReducer = (currentState, action) => {
+const MyAccountReducer = (currentState, action) => {
     switch (action.type) {
         case "login":
             return action.payload;
@@ -10,7 +10,7 @@ const MyUserReducer = (currentState, action) => {
             AsyncStorage.clear();
             console.log("Xóa")
             return null;
-        case "updateUser":
+        case "updateAccount":
             return {
                 ...currentState,
                 ...action.payload
@@ -20,4 +20,4 @@ const MyUserReducer = (currentState, action) => {
     }
 };
 
-export default MyUserReducer;
+export default MyAccountReducer;

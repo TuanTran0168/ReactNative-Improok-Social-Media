@@ -17,9 +17,8 @@ import axios from "axios";
 // const DJANGO_SERVER = "http://192.168.1.12:8000"
 // const DJANGO_SERVER = "http://192.168.1.35:8000"
 // const DJANGO_SERVER = "http://192.168.1.25:8000"
-
-const DJANGO_SERVER = "http://192.168.1.7:8000"
-// const DJANGO_SERVER = "http://192.168.1.19:8000"
+// const DJANGO_SERVER = "http://192.168.1.18:8000"
+const DJANGO_SERVER = "http://192.168.1.5:8000"
 
 export const endpoints = {
     "current-user": `${DJANGO_SERVER}/users/current-user/`,
@@ -27,7 +26,7 @@ export const endpoints = {
     "login": `${DJANGO_SERVER}/o/token/`,
     "get-account-by-user": (id) => `${DJANGO_SERVER}/users/${id}/account/`,
     "create-post": `${DJANGO_SERVER}/posts/`,
-    "get-all-post": `${DJANGO_SERVER}/posts/`,
+    "get-all-post": (page) => `${DJANGO_SERVER}/posts/?page=${page}`,
     "create-comment": `${DJANGO_SERVER}/comment/`,
     "delete-comment": (id) => `${DJANGO_SERVER}/comment/${id}/`,
     "get-comment-by-post": (id, page) => `${DJANGO_SERVER}/posts/${id}/comments/?page=${page}`,
@@ -76,7 +75,13 @@ export const endpoints = {
     "get-room-by-account": (id) => `${DJANGO_SERVER}/accounts/${id}/rooms/`,
     "get-message-by-room": (id) => `${DJANGO_SERVER}/rooms/${id}/messages/`,
     "send-message": `${DJANGO_SERVER}/messages/`,
-    "get-user-by-id": (id) => `${DJANGO_SERVER}/users/${id}/`
+    "get-user-by-id": (id) => `${DJANGO_SERVER}/users/${id}/`,
+    "create-room": `${DJANGO_SERVER}/rooms/`,
+    "find-room": `${DJANGO_SERVER}/rooms/find_room/`,
+    "search-group": (group) => `${DJANGO_SERVER}/invitation_groups/search_group_cache/?invitation_group_name=${group}`,
+    "update-user": (id) => `${DJANGO_SERVER}/users/${id}/`,
+    "update-account": (id) => `${DJANGO_SERVER}/accounts/${id}/`,
+    "update-post": (id) => `${DJANGO_SERVER}/posts/${id}/`,
 }
 
 export const djangoAuthApi = (token) => {
